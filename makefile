@@ -46,7 +46,7 @@ restart-3: ## Restart for Server 3
 ## App
 
 app-restart: ## Restart Server
-	@cd go; go build . -o isuconquest
+	@cd go; go build -o isuconquest .
 	@sudo systemctl daemon-reload
 	@sudo systemctl restart $(SERVICE)
 	@echo 'Restart service'
@@ -74,7 +74,7 @@ nginx-error-log: ## Tail nginx error.log
 # 1xxを除いて少し並べかえる
 alp: ## Run alp
 	sudo alp ltsv --file $(NGINX_LOG) --sort sum --reverse \
-	--matching-groups='/transactions/\d+\.png, /upload/[0-9a-f]+\.jpg, /static/js/.+, /initialize$$ , /new_items.json$$ , /new_items/\d+.json$$ , /users/transactions.json$$ , /users/\d+.json$$ , /items/\d+.json$$ , /items/edit$$ , /buy$$ , /sell$$ , /ship$$ , /ship_done$$ , /complete$$ , /transactions/{transaction_evidence_id}.png$$ , /bump$$ , /settings$$ , /login$$ , /register$$ , /reports.json$$ , /$$ , /login$$ , /register$$ , /timeline$$ , /categories/\d+/items$$ , /sell$$ , /items/\d+$$ , /items/\d+/edit$$ , /items/\d+/buy$$ , /buy/complete$$ , /transactions/\d+$$ , /users/\d+$$ , /users/setting$$' \
+	--matching-groups='/user/\d+/present/receive, /user/\d+/gacha/draw/\d+/\d+', /admin/user/\d+, /user/\d+/gacha/index, /user/\d+/card/addexp/\d+, /user/\d+/card, /user/\d+/item, /user/\d+/reward, /user/\d+/home, /user/\d+/present/index/\d+\
 	-o 'count,2xx,3xx,4xx,5xx,method,uri,sum,avg,min,max,p90,p95,p99,stddev,min_body,max_body,sum_body,avg_body'\
 	> $(ALP_LOG)
 	echo $(DISCORD_WEBHOOK_URL)
