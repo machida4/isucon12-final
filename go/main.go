@@ -241,7 +241,7 @@ func (h *Handler) checkSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc
 // checkOneTimeToken ワンタイムトークンの確認用middleware
 func (h *Handler) checkOneTimeToken(token string, tokenType int, requestAt int64) error {
 	tk := new(UserOneTimeToken)
-	query := "SELECT * FROM user_one_time_tokens WHERE token=? AND token_type=? AND deleted_at IS NULL"
+	query := "SELECT * FROM user_one_time_tokens WHERE token=? AND token_type=?"
 	if err := h.DB.Get(tk, query, token, tokenType); err != nil {
 		if err == sql.ErrNoRows {
 			return ErrInvalidToken
@@ -250,16 +250,17 @@ func (h *Handler) checkOneTimeToken(token string, tokenType int, requestAt int64
 	}
 
 	if tk.ExpiredAt < requestAt {
-		query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE token=?"
-		if _, err := h.DB.Exec(query, requestAt, token); err != nil {
+		query = "DELETE FROM user_one_time_tokens WHERE token=?"
+		if _, err := h.DB.Exec(query, token); err != nil {
 			return err
 		}
 		return ErrInvalidToken
 	}
 
 	// 使ったトークンは失効する
-	query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE token=?"
-	if _, err := h.DB.Exec(query, requestAt, token); err != nil {
+	// query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE token=?"
+	query = "DELETE FROM user_one_time_tokens WHERE token=?"
+	if _, err := h.DB.Exec(query, token); err != nil {
 		return err
 	}
 
@@ -983,8 +984,9 @@ func (h *Handler) listGacha(c echo.Context) error {
 	}
 
 	// ガチャ実行用のワンタイムトークンの発行
-	query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE user_id=? AND deleted_at IS NULL"
-	if _, err = h.DB.Exec(query, requestAt, userID); err != nil {
+	// query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE user_id=?"
+	query = "DELETE FROM user_one_time_tokens WHERE user_id=?"
+	if _, err = h.DB.Exec(query, userID); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 	tID, err := h.generateID()
@@ -1376,8 +1378,9 @@ func (h *Handler) listItem(c echo.Context) error {
 	}
 
 	// アイテムの強化に使うためのワンタイムトークンを発行
-	query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE user_id=? AND deleted_at IS NULL"
-	if _, err = h.DB.Exec(query, requestAt, userID); err != nil {
+	// query = "UPDATE user_one_time_tokens SET deleted_at=? WHERE user_id=?"
+	query = "DELETE FROM user_one_time_tokens WHERE user_id=?"
+	if _, err = h.DB.Exec(query, userID); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 	tID, err := h.generateID()
