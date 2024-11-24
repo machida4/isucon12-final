@@ -46,7 +46,7 @@ restart-3: ## Restart for Server 3
 ## App
 
 app-restart: ## Restart Server
-	@cd go; go build . -o isuconquest
+	@cd go; go build -o isuconquest .
 	@sudo systemctl daemon-reload
 	@sudo systemctl restart $(SERVICE)
 	@echo 'Restart service'
