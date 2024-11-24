@@ -1280,14 +1280,14 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		})
 	}
 
-	tx, err := h.DB.Beginx()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
-	}
-	defer tx.Rollback() //nolint:errcheck
-
 	// 配布処理
 	for i := range obtainPresent {
+		tx, err := h.DB.Beginx()
+		if err != nil {
+			return errorResponse(c, http.StatusInternalServerError, err)
+		}
+		defer tx.Rollback() //nolint:errcheck
+
 		if obtainPresent[i].DeletedAt != nil {
 			return errorResponse(c, http.StatusInternalServerError, fmt.Errorf("received present"))
 		}
@@ -1296,7 +1296,7 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		obtainPresent[i].DeletedAt = &requestAt
 		v := obtainPresent[i]
 		query = "UPDATE user_presents SET deleted_at=?, updated_at=? WHERE id=?"
-		_, err := tx.Exec(query, requestAt, requestAt, v.ID)
+		_, err = tx.Exec(query, requestAt, requestAt, v.ID)
 		if err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
@@ -1311,11 +1311,11 @@ func (h *Handler) receivePresent(c echo.Context) error {
 			}
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
-	}
 
-	err = tx.Commit()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
+		err = tx.Commit()
+		if err != nil {
+			return errorResponse(c, http.StatusInternalServerError, err)
+		}
 	}
 
 	return successResponse(c, &ReceivePresentResponse{
