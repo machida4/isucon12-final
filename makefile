@@ -74,7 +74,7 @@ nginx-error-log: ## Tail nginx error.log
 # 1xxを除いて少し並べかえる
 alp: ## Run alp
 	sudo alp ltsv --file $(NGINX_LOG) --sort sum --reverse \
-	--matching-groups='/user/\d+/present/receive, /user/\d+/gacha/draw/\d+/\d+', /admin/user/\d+, /user/\d+/gacha/index, /user/\d+/card/addexp/\d+, /user/\d+/card, /user/\d+/item, /user/\d+/reward, /user/\d+/home, /user/\d+/present/index/\d+\
+	--matching-groups='/user/\d+/present/receive, /user/\d+/gacha/draw/\d+/\d+, /admin/user/\d+, /user/\d+/gacha/index, /user/\d+/card/addexp/\d+, /user/\d+/card, /user/\d+/item, /user/\d+/reward, /user/\d+/home, /user/\d+/present/index/\d+' \
 	-o 'count,2xx,3xx,4xx,5xx,method,uri,sum,avg,min,max,p90,p95,p99,stddev,min_body,max_body,sum_body,avg_body'\
 	> $(ALP_LOG)
 	echo $(DISCORD_WEBHOOK_URL)
