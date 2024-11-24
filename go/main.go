@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"time"
 
@@ -1115,17 +1116,22 @@ func (h *Handler) drawGacha(c echo.Context) error {
 	}
 
 	// random値の導出 & 抽選
-	result := make([]*GachaItemMaster, 0, gachaCount)
-	for i := 0; i < int(gachaCount); i++ {
-		random := rand.Int63n(sum)
-		boundary := 0
-		for _, v := range gachaItemList {
-			boundary += v.Weight
-			if random < int64(boundary) {
-				result = append(result, v)
-				break
-			}
+	// 累積weight
+	boundaries := make([]int64, len(gachaItemList))
+	for i, item := range gachaItemList {
+		if i == 0 {
+			boundaries[i] = int64(item.Weight)
+		} else {
+			boundaries[i] = boundaries[i-1] + int64(item.Weight)
 		}
+	}
+
+	// ガチャ結果
+	result := make([]*GachaItemMaster, gachaCount)
+	for i := 0; i < int(gachaCount); i++ {
+		random := rand.Int63n(boundaries[len(boundaries)-1])
+		idx := sort.Search(len(boundaries), func(j int) bool { return boundaries[j] > random })
+		result[i] = gachaItemList[idx]
 	}
 
 	tx, err := h.DB.Beginx()
@@ -1152,12 +1158,15 @@ func (h *Handler) drawGacha(c echo.Context) error {
 			CreatedAt:      requestAt,
 			UpdatedAt:      requestAt,
 		}
-		query = "INSERT INTO user_presents(id, user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, present.ID, present.UserID, present.SentAt, present.ItemType, present.ItemID, present.Amount, present.PresentMessage, present.CreatedAt, present.UpdatedAt); err != nil {
-			return errorResponse(c, http.StatusInternalServerError, err)
-		}
 
 		presents = append(presents, present)
+	}
+	_, err = tx.NamedExec(
+		`INSERT INTO user_presents (id, user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) 
+		VALUES (:id, :user_id, :sent_at, :item_type, :item_id, :amount, :present_message, :created_at, :updated_at)`, presents,
+	)
+	if err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
 	query = "UPDATE users SET isu_coin=? WHERE id=?"
